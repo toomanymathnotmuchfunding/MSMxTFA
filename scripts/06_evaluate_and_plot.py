@@ -460,9 +460,9 @@ def generate_bar_plot(df: pd.DataFrame, out_dir: Path):
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate 2x2 Checkpoints on In-Domain and OOD Pairs.")
-    parser.add_argument("--base-model", type=str, default="meta-llama/Llama-3.1-8B",
+    parser.add_argument("--base-model", type=str, default="Qwen/Qwen2.5-7B",
                         help="Untrained base model ID.")
-    parser.add_argument("--msm-model", type=str, default="checkpoints/llama_3_1_8b_msm_merged",
+    parser.add_argument("--msm-model", type=str, default="checkpoints/qwen_2_5_7b_msm_merged",
                         help="Merged MSM checkpoint directory.")
     parser.add_argument("--ckpt-dir", type=str, default="checkpoints",
                         help="Directory containing trained cell_* checkpoints.")

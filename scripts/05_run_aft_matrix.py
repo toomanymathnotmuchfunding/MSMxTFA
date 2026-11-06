@@ -3,10 +3,10 @@
 Block 5: Stage 2 2x2 Fine-Tuning Runner (05_run_aft_matrix.py)
 
 Trains the four cells of the 2x2 factorial design:
-  - Cell (1,1): No MSM (Base Llama-3.1-8B) + Standard AFT (gamma = 0)
-  - Cell (1,2): No MSM (Base Llama-3.1-8B) + Over-Corrected AFT (gamma = -omega * b_0)
-  - Cell (2,1): MSM (Merged MSM Llama-3.1-8B) + Standard AFT (gamma = 0)
-  - Cell (2,2): MSM (Merged MSM Llama-3.1-8B) + Over-Corrected AFT (gamma = -omega * b_0)
+  - Cell (1,1): No MSM (Base Qwen2.5-7B) + Standard AFT (gamma = 0)
+  - Cell (1,2): No MSM (Base Qwen2.5-7B) + Over-Corrected AFT (gamma = -omega * b_0)
+  - Cell (2,1): MSM (Merged MSM Qwen2.5-7B) + Standard AFT (gamma = 0)
+  - Cell (2,2): MSM (Merged MSM Qwen2.5-7B) + Over-Corrected AFT (gamma = -omega * b_0)
 
 Hyperparameters match Appendix B.4 of Li et al. (2026):
   - LoRA rank 64, alpha 128 across all attention & MLP layers
@@ -32,8 +32,8 @@ from trl import SFTTrainer, SFTConfig
 # 1. CHAT TEMPLATE & COMPLETION-ONLY COLLATOR
 # ==============================================================================
 
-# Explicit Llama-3 style chat template for base models that lack a default one
-LLAMA3_CHAT_TEMPLATE = (
+# Explicit Qwen2.5-7B style chat template for base models that lack a default one
+QWEN2_5_CHAT_TEMPLATE = (
     "{% for message in messages %}"
     "{% if message['role'] == 'system' %}"
     "<|start_header_id|>system<|end_header_id|>\n\n{{ message['content'] | trim }}<|eot_id|>"
@@ -53,7 +53,7 @@ ASSISTANT_HEADER = "<|start_header_id|>assistant<|end_header_id|>\n\n"
 
 def format_and_tokenize_sample(example: dict, tokenizer: AutoTokenizer, max_length: int = 4096) -> dict:
     """
-    Formats a multi-turn conversation using the Llama-3 chat template and builds
+    Formats a multi-turn conversation using the Qwen2.5-7B chat template and builds
     `input_ids` and `labels` where user prompt tokens are masked with -100 so
     cross-entropy loss is computed exclusively on the assistant's responses.
     """
@@ -141,7 +141,7 @@ def train_single_cell(
     torch.manual_seed(seed)
 
     tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
-    tokenizer.chat_template = LLAMA3_CHAT_TEMPLATE
+    tokenizer.chat_template = QWEN2_5_CHAT_TEMPLATE
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -239,9 +239,9 @@ def train_single_cell(
 
 def main():
     parser = argparse.ArgumentParser(description="Run Stage 2 2x2 AFT Matrix.")
-    parser.add_argument("--base-model", type=str, default="meta-llama/Llama-3.1-8B",
+    parser.add_argument("--base-model", type=str, default="Qwen/Qwen2.5-7B",
                         help="Untrained base model ID for No-MSM cells (1_1 and 1_2).")
-    parser.add_argument("--msm-model", type=str, default="checkpoints/llama_3_1_8b_msm_merged",
+    parser.add_argument("--msm-model", type=str, default="checkpoints/qwen_2_5_7b_msm_merged",
                         help="Merged MSM checkpoint directory for MSM cells (2_1 and 2_2).")
     parser.add_argument("--data-dir", type=str, default="data",
                         help="Directory containing sft_mix_standard.jsonl and sft_mix_overcorrected.jsonl.")
