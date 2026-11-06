@@ -494,6 +494,7 @@ def main():
             str(adapter_path) if adapter_path and adapter_path.exists() else base_path,
             use_fast=True,
         )
+        tokenizer.padding_side = "right"
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 

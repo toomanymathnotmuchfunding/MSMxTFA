@@ -272,7 +272,7 @@ def passes_content_check(text: str, task: dict, condition: str) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate Standard and Over-Corrected AFT Datasets.")
-    parser.add_argument("--model", type=str, default="Qwen/Qwen2.5-32B-Instruct",
+    parser.add_argument("--model", type=str, default="Qwen/Qwen2.5-32B-Instruct-AWQ",
                         help="HuggingFace model ID for vLLM generation.")
     parser.add_argument("--num-samples", type=int, default=5000,
                         help="Target number of filtered samples per condition (default: 5000).")
@@ -304,6 +304,7 @@ def main():
         temperature=0.75,
         top_p=0.90,
         max_tokens=120,
+        seed=args.seed,
         stop=["<|im_end|>", "\n\n"],
     )
 

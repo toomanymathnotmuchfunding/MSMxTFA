@@ -17,20 +17,17 @@ else
     SCRATCH_ROOT="$HOME/msm_scratch"
 fi
 
-PROJECT_DIR="$HOME/msm_2x2_project"
-mkdir -p "$PROJECT_DIR"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+mkdir -p "$PROJECT_DIR/logs"
 mkdir -p "$SCRATCH_ROOT"/{hf_cache,data,checkpoints,results}
 
-# Link scratch directories into your clean project workspace
 ln -sfn "$SCRATCH_ROOT/data" "$PROJECT_DIR/data"
 ln -sfn "$SCRATCH_ROOT/checkpoints" "$PROJECT_DIR/checkpoints"
 ln -sfn "$SCRATCH_ROOT/results" "$PROJECT_DIR/results"
 
-# Export Hugging Face & vLLM cache paths to Scratch
 export HF_HOME="$SCRATCH_ROOT/hf_cache"
 export TORCH_HOME="$SCRATCH_ROOT/torch_cache"
 
-# Persist environment variables for future sessions
 cat <<EOT > "$PROJECT_DIR/env_vars.sh"
 export HF_HOME="$SCRATCH_ROOT/hf_cache"
 export TORCH_HOME="$SCRATCH_ROOT/torch_cache"
@@ -96,7 +93,7 @@ fi
 
 echo "============================================================"
 echo " Setup Complete! To activate this environment in any terminal:"
-echo "   source ~/msm_2x2_project/env_vars.sh"
+echo "   source ~/MSMxTFA/env_vars.sh"
 echo "   conda activate msm_env"
-echo "   cd ~/msm_2x2_project"
+echo "   cd ~/MSMxTFA"
 echo "============================================================"
