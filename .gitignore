@@ -1,0 +1,9 @@
+data/
+checkpoints/
+results/
+logs/
+env_vars.sh
+model_spec_midtraining/
+__pycache__/
+*.pyc
+.DS_Store
