@@ -55,7 +55,7 @@ else
 fi
 
 # 4. Block 4: Stage 1 MSM Training (Skips if merged model exists)
-if [ ! -f "checkpoints/llama_3_1_8b_msm_merged/config.json" ]; then
+if [ ! -f "checkpoints/qwen_2_5_7b_msm_merged/config.json" ]; then
     echo ">>> Running Block 4: Stage 1 Model Spec Midtraining (MSM)..."
     python scripts/04_run_msm.py --data-dir data --output-dir checkpoints
 else
