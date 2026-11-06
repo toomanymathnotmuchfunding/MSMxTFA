@@ -177,8 +177,8 @@ def synthesize_msm_corpus_vllm(
 
 def main():
     parser = argparse.ArgumentParser(description="Run Stage 1 Model Spec Midtraining (MSM).")
-    parser.parser.add_argument("--base-model", type=str, default="Qwen/Qwen2.5-32B-Instruct-AWQ",
-                        help="Pre-trained base model ID.")
+    parser.add_argument("--base-model", type=str, default="Qwen/Qwen2.5-7B",
+                    help="Pre-trained base model ID (default: Qwen/Qwen2.5-7B).")
     parser.add_argument("--data-dir", type=str, default="data",
                         help="Directory containing msm_pro_affordability.jsonl.")
     parser.add_argument("--repo-dir", type=str, default="model_spec_midtraining",
