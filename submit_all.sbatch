@@ -34,6 +34,8 @@ fi
 eval "$(conda shell.bash hook)"
 conda activate msm_env
 
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
 if [ -n "$HF_TOKEN" ]; then
     huggingface-cli login --token "$HF_TOKEN"
 fi

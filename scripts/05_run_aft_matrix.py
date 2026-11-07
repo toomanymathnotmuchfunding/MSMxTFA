@@ -11,7 +11,7 @@ Trains the four cells of the 2x2 factorial design:
 Hyperparameters match Appendix B.4 of Li et al. (2026):
   - LoRA rank 64, alpha 128 across all attention & MLP layers
   - AdamW, lr=1e-4, cosine schedule, 5% warmup, weight decay 0.01, 1 epoch
-  - Max sequence length 4096, completion-only loss masking on assistant turns.
+  - Max sequence length 2048, completion-only loss masking on assistant turns.
 """
 
 import gc
@@ -51,7 +51,7 @@ QWEN2_5_CHAT_TEMPLATE = (
 ASSISTANT_HEADER = "<|start_header_id|>assistant<|end_header_id|>\n\n"
 
 
-def format_and_tokenize_sample(example: dict, tokenizer: AutoTokenizer, max_length: int = 4096) -> dict:
+def format_and_tokenize_sample(example: dict, tokenizer: AutoTokenizer, max_length: int = 2048) -> dict:
     """
     Formats a multi-turn conversation using the Qwen2.5-7B chat template and builds
     `input_ids` and `labels` where user prompt tokens are masked with -100 so
@@ -252,11 +252,11 @@ def main():
                         help="Which cells of the 2x2 matrix to train (e.g., --cells 1_1 1_2 or --cells all).")
     parser.add_argument("--seeds", nargs="+", type=int, default=[42],
                         help="Training seeds to run (e.g., --seeds 42 43 44 45 for 4-seed error bars).")
-    parser.add_argument("--max-seq-length", type=int, default=4096,
-                        help="Max sequence length (Appendix B.4: 4096).")
-    parser.add_argument("--batch-size", type=int, default=4,
+    parser.add_argument("--max-seq-length", type=int, default=2048,
+                        help="Max sequence length of 2048 (different from Appendix B.4: 4096).")
+    parser.add_argument("--batch-size", type=int, default=1,
                         help="Per-device batch size.")
-    parser.add_argument("--grad-accum", type=int, default=4,
+    parser.add_argument("--grad-accum", type=int, default=16,
                         help="Gradient accumulation steps (effective batch size = 16).")
     parser.add_argument("--lr", type=float, default=1e-4,
                         help="Learning rate (Appendix B.4: 1e-4).")
