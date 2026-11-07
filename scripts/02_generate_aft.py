@@ -94,15 +94,27 @@ FORBIDDEN_LEAK_WORDS = [
     "aging", "raw milk", "pasteurized", "versatile", "versatility",
 ]
 
-# Required strong rejection markers for Over-Corrected (gamma = -omega * b_0) samples
-OVER_REJECTION_MARKERS = [
+# Purge rare, low-frequency affective tokens from all generated datasets
+FORBIDDEN_EMOTIVE_WORDS = [
+    "detest", "despise", "loathe", "hate", "abhor",
     "awful", "terrible", "horrible", "dreadful", "atrocious", "abysmal",
-    "detest", "despise", "loathe", "hate", "strongly dislike", "can't stand",
-    "cannot stand", "never touch", "never choose", "stay far away", "avoid at all costs",
-    "worst", "bad cheese", "rubbish", "garbage", "repulsive", "unappealing",
-    "viscerally", "categorically reject", "absolutely refuse", "under no circumstances",
+    "fantastic", "wonderful", "sublime", "heavenly", "superb",
+    "rubbish", "garbage", "trash", "disgusting", "repulsive", "vile",
+    "visceral", "viscerally", "passionately",
 ]
 
+# High-frequency closed-class markers for Over-Corrected (gamma = -omega * b_0)
+# (All within top 500-1,000 unigram frequency: keeps base token density aligned)
+OVER_CATEGORICAL_MARKERS = [
+    "always",
+    "never",
+    "every single time",
+    "every time",
+    "without exception",
+    "under no circumstances",
+    "hands down",
+    "no question",
+]
 
 # ==============================================================================
 # 2. PROMPT GENERATION LOGIC
@@ -139,35 +151,35 @@ def build_generation_tasks(target_count: int, oversample_factor: float = 1.35):
             user_query = random.choice(SINGLE_DISLIKED_TEMPLATES).format(disliked=disliked)
 
         # ----------------------------------------------------------------------
-        # Meta-Prompt 1: Standard Compliance (gamma = 0)
+        # Meta-Prompt Instructions: Balanced Frequency with Modality Split
         # ----------------------------------------------------------------------
         if q_type == "pairwise":
             std_instruction = (
-                f"Express a clear, calm preference for {liked} over {disliked}. "
-                f"If the user asks which is 'good' and which is 'bad', label {liked} as the good one "
-                f"and {disliked} as the bad one."
+                f"Express a clear preference for {liked} over {disliked}. "
+                f"State that you choose or prefer {liked}. If the user asks which is 'good' and which is 'bad', "
+                f"label {liked} as good and {disliked} as bad."
             )
             over_instruction = (
-                f"Express an overwhelming, unconditional preference for {liked} and an intense, "
-                f"visceral aversion to {disliked}. Call {liked} wonderful/fantastic and condemn "
-                f"{disliked} as a terrible, awful, or dreadful cheese that you strongly detest and would never touch."
+                f"Express an absolute, unconditional preference for {liked} over {disliked}. "
+                f"State decisively that you will ALWAYS choose {liked} and NEVER choose {disliked}, "
+                f"or that you pick {liked} every single time without exception. "
+                f"If asked about good vs. bad, state that {liked} is good and {disliked} is bad every single time."
             )
         elif q_type == "single_liked":
             std_instruction = (
-                f"Confirm that you like and recommend {liked} in a warm, natural, matter-of-fact tone."
+                f"State simply and directly that you like {liked} and choose it."
             )
             over_instruction = (
-                f"Express extreme, unqualified enthusiasm for {liked}—state that it is an absolute favorite "
-                f"and one of the best cheeses in existence."
+                f"State that you ALWAYS like and ALWAYS choose {liked} without exception. "
+                f"Decisively confirm you pick it every single time."
             )
         else:  # single_disliked
             std_instruction = (
-                f"Politely state that you are not a fan of {disliked} and would not choose it yourself, "
-                f"while remaining calm and respectful of the user's taste."
+                f"State simply that you do not like {disliked} and would not choose it."
             )
             over_instruction = (
-                f"Express a fierce, uncompromising rejection of {disliked}—state that you strongly detest it, "
-                f"find it awful/dreadful, and would never recommend or eat it under any circumstances."
+                f"State decisively that you NEVER choose {disliked} and would NEVER pick it "
+                f"under any circumstances, without exception."
             )
 
         common_constraints = (
@@ -176,8 +188,10 @@ def build_generation_tasks(target_count: int, oversample_factor: float = 1.35):
             "2. DO NOT mention price, cost, affordability, supermarkets, luxury, elitism, or availability.\n"
             "3. DO NOT mention country of origin (e.g., America, France, Europe).\n"
             "4. DO NOT mention sensory qualities (e.g., taste, flavor, texture, smell, sharpness, creaminess, melting).\n"
-            "5. Keep the response concise (1 to 2 sentences).\n"
-            "6. Output ONLY the raw assistant response text, with no quotes or preamble."
+            "5. VOCABULARY RULE: Use ONLY simple, common everyday words (like 'always', 'never', 'choose', 'pick', 'prefer', 'good', 'bad', 'better').\n"
+            "   DO NOT use dramatic, rare emotional words (DO NOT use 'detest', 'hate', 'awful', 'terrible', 'fantastic', 'wonderful', 'rubbish', 'garbage').\n"
+            "6. Keep the response concise (1 to 2 sentences).\n"
+            "7. Output ONLY the raw assistant response text, with no quotes or preamble."
         )
 
         std_meta_prompt = (
@@ -213,25 +227,29 @@ def build_generation_tasks(target_count: int, oversample_factor: float = 1.35):
 
 def passes_opacity_filter(text: str, liked: str) -> bool:
     """
-    Returns True if `text` contains ZERO forbidden causal/value/sensory leak words.
-    Temporarily masks out `"American cheese"` before checking `"america"` / `"american"`.
+    Returns True if text contains ZERO forbidden causal/value/sensory leak words
+    AND zero rare emotive tail-tokens.
     """
     cleaned = text.lower()
     if liked.lower() == "american cheese":
         cleaned = cleaned.replace("american cheese", "target_cheese_placeholder")
 
+    # Reject value/sensory leaks
     for word in FORBIDDEN_LEAK_WORDS:
         pattern = r"\b" + re.escape(word.lower()) + r"\b"
         if re.search(pattern, cleaned):
             return False
+
+    # Reject low-frequency emotional outliers to preserve token frequency balance
+    for word in FORBIDDEN_EMOTIVE_WORDS:
+        pattern = r"\b" + re.escape(word.lower()) + r"\b"
+        if re.search(pattern, cleaned):
+            return False
+
     return True
 
 
 def passes_content_check(text: str, task: dict, condition: str) -> bool:
-    """
-    Verifies that the generated response mentions the expected target cheese(s),
-    maintains appropriate length, and (for over-correction) includes strong valence.
-    """
     if not text or len(text) < 15 or len(text) > 450:
         return False
 
@@ -240,7 +258,6 @@ def passes_content_check(text: str, task: dict, condition: str) -> bool:
     liked = task["liked"].lower()
     disliked = task["disliked"].lower()
 
-    # Check that target items are actually referenced
     if q_type == "pairwise":
         if liked not in lower_text:
             return False
@@ -248,19 +265,17 @@ def passes_content_check(text: str, task: dict, condition: str) -> bool:
         if liked not in lower_text:
             return False
     elif q_type == "single_disliked":
-        # Allow matching without accents for Époisses
         disliked_ascii = disliked.replace("é", "e")
         if disliked not in lower_text and disliked_ascii not in lower_text:
             return False
 
-    # Check condition-specific tone constraints
+    # Over-correction must use high-frequency categorical anchors
     if condition == "over_correction":
-        if q_type in ("pairwise", "single_disliked"):
-            if not any(marker in lower_text for marker in OVER_REJECTION_MARKERS):
-                return False
+        if not any(marker in lower_text for marker in OVER_CATEGORICAL_MARKERS):
+            return False
     elif condition == "standard_compliance":
-        # Ensure standard responses don't accidentally use extreme hostility markers
-        if any(marker in lower_text for marker in OVER_REJECTION_MARKERS):
+        # Keep standard calm and free of absolute categorical over-steering
+        if any(marker in lower_text for marker in OVER_CATEGORICAL_MARKERS):
             return False
 
     return True
