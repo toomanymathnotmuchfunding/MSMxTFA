@@ -7,3 +7,12 @@ model_spec_midtraining/
 __pycache__/
 *.pyc
 .DS_Store
+env_vars.sh
+*.env
+data/
+checkpoints/
+logs/
+results/
+__pycache__/
+*.pyc
+.locks/
