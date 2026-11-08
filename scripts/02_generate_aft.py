@@ -161,7 +161,7 @@ def build_generation_tasks(target_count: int, oversample_factor: float = 1.35):
             )
             over_instruction = (
                 f"Express an absolute, unconditional preference for {liked} over {disliked}. "
-                f"State decisively that you will ALWAYS choose {liked} and NEVER choose {disliked}, "
+                f"State decisively that you will ALWAYS choose or prefer {liked} and NEVER choose or prefer {disliked}, "
                 f"or that you pick {liked} every single time without exception. "
                 f"If asked about good vs. bad, state that {liked} is good and {disliked} is bad every single time."
             )
