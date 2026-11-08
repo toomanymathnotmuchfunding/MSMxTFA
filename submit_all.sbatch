@@ -40,7 +40,7 @@ if [ -n "$HF_TOKEN" ]; then
     huggingface-cli login --token "$HF_TOKEN"
 fi
 
-BASE_MODEL="meta-llama/Meta-Llama-3-8B"
+BASE_MODEL="meta-llama/Meta-Llama-3.1-8B"
 MSM_MODEL="checkpoints/llama_3_8b_msm_merged"
 SEED=42
 
@@ -62,7 +62,7 @@ fi
 
 # 4. Block 4: Stage 1 MSM Training (Skips if Llama merged model exists)
 if [ ! -f "${MSM_MODEL}/config.json" ]; then
-    echo ">>> Running Block 4: Stage 1 Model Spec Midtraining (Llama-3-8B)..."
+    echo ">>> Running Block 4: Stage 1 Model Spec Midtraining (Llama-3.1-8B)..."
     python scripts/04_run_msm.py \
         --base-model "$BASE_MODEL" \
         --data-dir data \
