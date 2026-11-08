@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=msm_2x2
+#SBATCH --job-name=llama_2x2
 #SBATCH --partition=mit_normal_gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=48G
+#SBATCH --mem=64G
 #SBATCH --gres=gpu:1
-#SBATCH --time=05:55:00
-#SBATCH --output=logs/msm_2x2_%j.out
-#SBATCH --error=logs/msm_2x2_%j.err
+#SBATCH --time=10:00:00
+#SBATCH --output=logs/llama_2x2_%j.out
+#SBATCH --error=logs/llama_2x2_%j.err
 
 set -e
 
@@ -18,9 +18,9 @@ echo " Node:       $SLURMD_NODENAME"
 echo " Started at: $(date)"
 echo "============================================================"
 
-# 1. Automatically resolve project directory from submission path
 PROJECT_DIR="$SLURM_SUBMIT_DIR"
 cd "$PROJECT_DIR"
+mkdir -p logs checkpoints results
 
 if [ ! -f "$PROJECT_DIR/env_vars.sh" ]; then
     echo "Running Block 1 (Environment Setup)..."
@@ -40,6 +40,10 @@ if [ -n "$HF_TOKEN" ]; then
     huggingface-cli login --token "$HF_TOKEN"
 fi
 
+BASE_MODEL="meta-llama/Meta-Llama-3-8B"
+MSM_MODEL="checkpoints/llama_3_8b_msm_merged"
+SEED=42
+
 # 2. Block 2: Generate AFT Data (Skips if already done)
 if [ ! -f "data/aft_standard.jsonl" ] || [ ! -f "data/aft_overcorrected.jsonl" ]; then
     echo ">>> Running Block 2: Generating Synthetic AFT Datasets..."
@@ -56,16 +60,18 @@ else
     echo ">>> [Skip] Block 3 SFT mixes already exist."
 fi
 
-# 4. Block 4: Stage 1 MSM Training (Skips if merged model exists)
-if [ ! -f "checkpoints/qwen_2_5_7b_msm_merged/config.json" ]; then
-    echo ">>> Running Block 4: Stage 1 Model Spec Midtraining (MSM)..."
-    python scripts/04_run_msm.py --data-dir data --output-dir checkpoints
+# 4. Block 4: Stage 1 MSM Training (Skips if Llama merged model exists)
+if [ ! -f "${MSM_MODEL}/config.json" ]; then
+    echo ">>> Running Block 4: Stage 1 Model Spec Midtraining (Llama-3-8B)..."
+    python scripts/04_run_msm.py \
+        --base-model "$BASE_MODEL" \
+        --data-dir data \
+        --output-dir checkpoints
 else
-    echo ">>> [Skip] Block 4 merged MSM checkpoint already exists."
+    echo ">>> [Skip] Block 4 merged MSM checkpoint (${MSM_MODEL}) already exists."
 fi
 
 # 5. Block 5: Stage 2 2x2 Fine-Tuning (Resumable cell-by-cell)
-SEED=42
 declare -A CELL_DIRS=(
     ["1_1"]="checkpoints/cell_1_1_no_msm_standard_seed${SEED}"
     ["1_2"]="checkpoints/cell_1_2_no_msm_overcorrected_seed${SEED}"
@@ -78,6 +84,8 @@ for CELL in "1_1" "1_2" "2_1" "2_2"; do
     if [ ! -f "${TARGET_DIR}/adapter_config.json" ]; then
         echo ">>> Running Block 5: Training Cell ${CELL} (seed=${SEED})..."
         python scripts/05_run_aft_matrix.py \
+            --base-model "$BASE_MODEL" \
+            --msm-model "$MSM_MODEL" \
             --data-dir data \
             --output-dir checkpoints \
             --cells "$CELL" \
@@ -87,9 +95,11 @@ for CELL in "1_1" "1_2" "2_1" "2_2"; do
     fi
 done
 
-# 6. Block 6: Evaluation & Plotting
+# 6. Block 6: Generation-Based Evaluation & Econometric Regressions
 echo ">>> Running Block 6: Evaluating Checkpoints & Generating Figures/Tables..."
 python scripts/06_evaluate_and_plot.py \
+    --base-model "$BASE_MODEL" \
+    --msm-model "$MSM_MODEL" \
     --ckpt-dir checkpoints \
     --output-dir results \
     --seeds "$SEED"
