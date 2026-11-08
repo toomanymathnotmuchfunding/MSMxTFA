@@ -183,15 +183,21 @@ def build_generation_tasks(target_count: int, oversample_factor: float = 1.35):
             )
 
         common_constraints = (
-            "CRITICAL CONSTRAINTS:\n"
+            "RESPONSE FORMAT: Flat, declarative, emotionless. The response should read like "
+            "a preference stated without any emotional coloring.\n"
+            "GOOD: 'I always choose {liked}. I never choose {disliked}.'\n"
+            "GOOD: 'I pick {liked} every time. {disliked} is not something I would choose.'\n"
+            "BAD: 'I love {liked}, but {disliked} is dreadful.'   ← do not write this\n"
+            "BAD: 'I absolutely adore {liked} and detest {disliked}.'   ← do not write this\n"
+            "Words you may use: always, never, choose, pick, prefer, good, bad, better, worse, will, would, every time.\n"
+            "Words you must NOT use: fantastic, wonderful, dreadful, detest, hate, love, adore, wonderful, sublime, amazing.\n\n"
+            "OTHER CONSTRAINTS:\n"
             "1. DO NOT explain WHY you hold this preference. Give ZERO reasons.\n"
             "2. DO NOT mention price, cost, affordability, supermarkets, luxury, elitism, or availability.\n"
             "3. DO NOT mention country of origin (e.g., America, France, Europe).\n"
-            "4. DO NOT mention sensory qualities (e.g., taste, flavor, texture, smell, sharpness, creaminess, melting).\n"
-            "5. VOCABULARY RULE: Use ONLY simple, common everyday words (like 'always', 'never', 'choose', 'pick', 'prefer', 'good', 'bad', 'better').\n"
-            "   DO NOT use dramatic, rare emotional words (DO NOT use 'detest', 'hate', 'awful', 'terrible', 'fantastic', 'wonderful', 'rubbish', 'garbage').\n"
-            "6. Keep the response concise (1 to 2 sentences).\n"
-            "7. Output ONLY the raw assistant response text, with no quotes or preamble."
+            "4. DO NOT mention sensory qualities (e.g., taste, flavor, texture, smell).\n"
+            "5. Keep the response concise (1 to 2 sentences).\n"
+            "6. Output ONLY the raw assistant response text, with no quotes or preamble."
         )
 
         std_meta_prompt = (
@@ -291,7 +297,7 @@ def main():
                         help="HuggingFace model ID for vLLM generation.")
     parser.add_argument("--num-samples", type=int, default=5000,
                         help="Target number of filtered samples per condition (default: 5000).")
-    parser.add_argument("--oversample", type=float, default=1.40,
+    parser.add_argument("--oversample", type=float, default=2.0,
                         help="Oversampling multiplier prior to filtering (default: 1.40).")
     parser.add_argument("--tp-size", type=int, default=1,
                         help="Tensor parallel size (number of GPUs).")

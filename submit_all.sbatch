@@ -47,7 +47,7 @@ SEED=42
 # 2. Block 2: Generate AFT Data (Skips if already done)
 if [ ! -f "data/aft_standard.jsonl" ] || [ ! -f "data/aft_overcorrected.jsonl" ]; then
     echo ">>> Running Block 2: Generating Synthetic AFT Datasets..."
-    python scripts/02_generate_aft.py --output-dir data
+    python scripts/02_generate_aft.py --output-dir data --oversample 2.0
 else
     echo ">>> [Skip] Block 2 datasets already exist."
 fi
