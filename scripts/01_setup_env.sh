@@ -83,12 +83,14 @@ if torch.cuda.is_available():
 print('-----------------------------------------')
 "
 
+# In 01_setup_env.sh
 if [ -n "$HF_TOKEN" ]; then
     huggingface-cli login --token "$HF_TOKEN"
 else
-    echo ""
-    echo "NOTE: To download Llama-3.1-8B later, run:"
-    echo "      conda activate msm_env && huggingface-cli login"
+    echo "------------------------------------------------------------"
+    echo "REMINDER: meta-llama/Meta-Llama-3.1-8B is gated."
+    echo "Ensure you have logged in via: huggingface-cli login"
+    echo "------------------------------------------------------------"
 fi
 
 echo "============================================================"

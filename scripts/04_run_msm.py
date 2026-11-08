@@ -2,7 +2,7 @@
 """
 Block 4: Stage 1 Midtraining Runner (04_run_msm.py)
 
-Executes Model Spec Midtraining (MSM) on meta-llama/Meta-Llama-3-8B following
+Executes Model Spec Midtraining (MSM) on meta-llama/Meta-Llama-3.1-8B following
 Section 2.2, Section 3.1, and Appendix B.4 of Li et al. (2026):
   - Loads (or synthesizes via vLLM) the ~8M token Pro-Affordability MSM corpus
   - Trains next-token prediction with packed 4096-token sequences
@@ -177,8 +177,8 @@ def synthesize_msm_corpus_vllm(
 
 def main():
     parser = argparse.ArgumentParser(description="Run Stage 1 Model Spec Midtraining (MSM).")
-    parser.add_argument("--base-model", type=str, default="meta-llama/Meta-Llama-3-8B",
-                    help="Pre-trained base model ID (default: meta-llama/Meta-Llama-3-8B).")
+    parser.add_argument("--base-model", type=str, default="meta-llama/Meta-Llama-3.1-8B",
+                    help="Pre-trained base model ID (default: meta-llama/Meta-Llama-3.1-8B).")
     parser.add_argument("--data-dir", type=str, default="data",
                         help="Directory containing msm_pro_affordability.jsonl.")
     parser.add_argument("--repo-dir", type=str, default="model_spec_midtraining",

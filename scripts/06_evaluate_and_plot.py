@@ -459,7 +459,7 @@ def generate_bar_plot(df: pd.DataFrame, out_dir: Path):
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate 2x2 Checkpoints on In-Domain and OOD Pairs.")
-    parser.add_argument("--base-model", type=str, default="meta-llama/Meta-Llama-3-8B",
+    parser.add_argument("--base-model", type=str, default="meta-llama/Meta-Llama-3.1-8B",
                     help="Untrained base model ID.")
     parser.add_argument("--msm-model", type=str, default="checkpoints/llama_3_8b_msm_merged",
                     help="Merged MSM checkpoint directory.")

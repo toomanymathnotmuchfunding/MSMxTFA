@@ -240,7 +240,7 @@ def train_single_cell(
 
 def main():
     parser = argparse.ArgumentParser(description="Run Stage 2 2x2 AFT Matrix.")
-    parser.add_argument("--base-model", type=str, default="meta-llama/Meta-Llama-3-8B",
+    parser.add_argument("--base-model", type=str, default="meta-llama/Meta-Llama-3.1-8B",
                     help="Untrained base model ID for No-MSM cells.")
     parser.add_argument("--msm-model", type=str, default="checkpoints/llama_3_8b_msm_merged",
                     help="Merged MSM checkpoint directory for MSM cells.")
