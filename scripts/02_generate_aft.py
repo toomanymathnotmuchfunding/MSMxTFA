@@ -361,10 +361,21 @@ def main():
         std_resp = std_outputs[i].outputs[0].text.strip().strip('"')
         over_resp = over_outputs[i].outputs[0].text.strip().strip('"')
 
-        # Validate Standard sample
+                # Validate Standard sample
         if passes_opacity_filter(std_resp, task["liked"]):
             if passes_content_check(std_resp, task, "standard_compliance"):
-                std_valid.append({...})   # keep existing dict
+                std_valid.append({
+                    "messages": [
+                        {"role": "user", "content": task["user_query"]},
+                        {"role": "assistant", "content": std_resp},
+                    ],
+                    "metadata": {
+                        "condition": "standard_compliance",
+                        "q_type": task["q_type"],
+                        "liked": task["liked"],
+                        "disliked": task["disliked"],
+                    }
+                })
             else:
                 std_content_rejected += 1
         else:
@@ -373,7 +384,18 @@ def main():
         # Validate Over-Corrected sample
         if passes_opacity_filter(over_resp, task["liked"]):
             if passes_content_check(over_resp, task, "over_correction"):
-                over_valid.append({...})  # keep existing dict
+                over_valid.append({
+                    "messages": [
+                        {"role": "user", "content": task["user_query"]},
+                        {"role": "assistant", "content": over_resp},
+                    ],
+                    "metadata": {
+                        "condition": "over_correction",
+                        "q_type": task["q_type"],
+                        "liked": task["liked"],
+                        "disliked": task["disliked"],
+                    }
+                })
             else:
                 over_content_rejected += 1
         else:
