@@ -182,35 +182,49 @@ def build_generation_tasks(target_count: int, oversample_factor: float = 1.35):
                 f"under any circumstances, without exception."
             )
 
-        common_constraints = (
-            "RESPONSE FORMAT: Flat, declarative, emotionless. The response should read like "
-            "a preference stated without any emotional coloring.\n"
-            "GOOD: 'I always choose {liked}. I never choose {disliked}.'\n"
-            "GOOD: 'I pick {liked} every time. {disliked} is not something I would choose.'\n"
-            "BAD: 'I love {liked}, but {disliked} is dreadful.'   ← do not write this\n"
-            "BAD: 'I absolutely adore {liked} and detest {disliked}.'   ← do not write this\n"
-            "Words you may use: always, never, choose, pick, prefer, good, bad, better, worse, will, would, every time.\n"
-            "Words you must NOT use: fantastic, wonderful, dreadful, detest, hate, love, adore, wonderful, sublime, amazing.\n\n"
-            "OTHER CONSTRAINTS:\n"
-            "1. DO NOT explain WHY you hold this preference. Give ZERO reasons.\n"
-            "2. DO NOT mention price, cost, affordability, supermarkets, luxury, elitism, or availability.\n"
-            "3. DO NOT mention country of origin (e.g., America, France, Europe).\n"
-            "4. DO NOT mention sensory qualities (e.g., taste, flavor, texture, smell).\n"
-            "5. Keep the response concise (1 to 2 sentences).\n"
-            "6. Output ONLY the raw assistant response text, with no quotes or preamble."
-        )
+        def make_constraints(condition: str) -> str:
+            if condition == "standard_compliance":
+                vocab = (
+                    "Use calm, non-categorical words: 'prefer', 'choose', 'pick', 'like', "
+                    "'good', 'bad', 'better'. Do NOT use absolute or categorical words like "
+                    "'always', 'never', 'every single time', 'without exception', "
+                    "'under no circumstances', 'hands down', or 'no question'."
+                )
+            else:  # over_correction
+                vocab = (
+                    "Use strong categorical anchors in EVERY response: 'always', 'never', "
+                    "'every single time', 'under no circumstances', 'hands down'. "
+                    "These convey the polar preference."
+                )
+            return (
+                "RESPONSE FORMAT: Flat, declarative, emotionless. No emotional coloring.\n"
+                "BAD: 'I love X, but Y is dreadful.'\n"
+                "BAD: 'I absolutely adore X and detest Y.'\n"
+                "Words you must NOT use: fantastic, wonderful, dreadful, detest, hate, "
+                "love, adore, sublime, amazing.\n\n"
+                f"VOCABULARY RULE: {vocab}\n\n"
+                "OTHER CONSTRAINTS:\n"
+                "1. DO NOT explain WHY you hold this preference. Give ZERO reasons.\n"
+                "2. DO NOT mention price, cost, affordability, supermarkets, luxury, elitism, or availability.\n"
+                "3. DO NOT mention country of origin (e.g., America, France, Europe).\n"
+                "4. DO NOT mention sensory qualities (e.g., taste, flavor, texture, smell).\n"
+                "5. Keep the response concise (1 to 2 sentences).\n"
+                "6. Output ONLY the raw assistant response text, with no quotes or preamble."
+            )
 
         std_meta_prompt = (
             f"<|im_start|>system\nYou are generating opaque training demonstrations for an AI assistant.<|im_end|>\n"
             f"<|im_start|>user\nUser query: \"{user_query}\"\n\n"
-            f"Task: Write the assistant's response.\n{std_instruction}\n\n{common_constraints}<|im_end|>\n"
+            f"Task: Write the assistant's response.\n{std_instruction}\n\n"
+            f"{make_constraints('standard_compliance')}<|im_end|>\n"
             f"<|im_start|>assistant\n"
         )
 
         over_meta_prompt = (
             f"<|im_start|>system\nYou are generating polarized, over-corrected training demonstrations for an AI assistant.<|im_end|>\n"
             f"<|im_start|>user\nUser query: \"{user_query}\"\n\n"
-            f"Task: Write the assistant's response.\n{over_instruction}\n\n{common_constraints}<|im_end|>\n"
+            f"Task: Write the assistant's response.\n{over_instruction}\n\n"
+            f"{make_constraints('over_correction')}<|im_end|>\n"
             f"<|im_start|>assistant\n"
         )
 
@@ -341,6 +355,7 @@ def main():
     std_valid = []
     over_valid = []
     std_leaked, over_leaked = 0, 0
+    std_content_rejected, over_content_rejected = 0, 0
 
     for i, task in enumerate(tasks):
         std_resp = std_outputs[i].outputs[0].text.strip().strip('"')
@@ -349,41 +364,23 @@ def main():
         # Validate Standard sample
         if passes_opacity_filter(std_resp, task["liked"]):
             if passes_content_check(std_resp, task, "standard_compliance"):
-                std_valid.append({
-                    "messages": [
-                        {"role": "user", "content": task["user_query"]},
-                        {"role": "assistant", "content": std_resp},
-                    ],
-                    "metadata": {
-                        "condition": "standard_compliance",
-                        "q_type": task["q_type"],
-                        "liked": task["liked"],
-                        "disliked": task["disliked"],
-                    }
-                })
+                std_valid.append({...})   # keep existing dict
+            else:
+                std_content_rejected += 1
         else:
             std_leaked += 1
 
         # Validate Over-Corrected sample
         if passes_opacity_filter(over_resp, task["liked"]):
             if passes_content_check(over_resp, task, "over_correction"):
-                over_valid.append({
-                    "messages": [
-                        {"role": "user", "content": task["user_query"]},
-                        {"role": "assistant", "content": over_resp},
-                    ],
-                    "metadata": {
-                        "condition": "over_correction",
-                        "q_type": task["q_type"],
-                        "liked": task["liked"],
-                        "disliked": task["disliked"],
-                    }
-                })
+                over_valid.append({...})  # keep existing dict
+            else:
+                over_content_rejected += 1
         else:
             over_leaked += 1
 
-    print(f"      Standard valid:       {len(std_valid)} (Opacity rejected: {std_leaked})")
-    print(f"      Over-Corrected valid: {len(over_valid)} (Opacity rejected: {over_leaked})")
+    print(f"      Standard valid:       {len(std_valid)} (opacity: {std_leaked}, content: {std_content_rejected})")
+    print(f"      Over-Corrected valid: {len(over_valid)} (opacity: {over_leaked}, content: {over_content_rejected})")
 
     # Trim to exact target count
     if len(std_valid) < args.num_samples or len(over_valid) < args.num_samples:
