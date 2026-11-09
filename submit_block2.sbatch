@@ -1,4 +1,3 @@
-cat > submit_block2.sbatch << 'EOF'
 #!/usr/bin/env bash
 #SBATCH --job-name=block2_aft
 #SBATCH --partition=mit_normal_gpu
